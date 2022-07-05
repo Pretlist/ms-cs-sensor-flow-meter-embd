@@ -5,14 +5,14 @@
 ## Master Branch
 
 ### Lucid chart
-https://lucid.app/lucidchart/7b28242e-a2fb-4516-bc7a-563e4d95eadc/edit?referringApp=google+drive&beaconFlowId=f25e97e091dd00e3&page=NpBuF3S33kr2&invitationId=inv_669b369e-2f4e-43eb-a8c2-9ea50e046c07#
+https://lucid.app/lucidchart/a27c0b89-38b3-40bd-bb4a-a128f833523f/edit?beaconFlowId=D27BD782D8F50079&invitationId=inv_3c839aa0-3898-4b72-b2b8-e74d513c5855&page=0_0#
 
 ### TDD sheet
-https://docs.google.com/spreadsheets/d/1osPImJucvkH70XCqvN8et04MF4ec9XjLfTu-NcQkcqY/edit#gid=147832556
+https://docs.google.com/spreadsheets/d/1N78erJV6k4Q1owOWkkFO6ajl8ilLd4qOblqVuWXxaR4/edit#gid=0
 
 ### Hardware Test Result
 
 ### Design Document
-https://docs.google.com/document/d/1f7Fdj-2kfwcnUQpjnOW-LMr_UE6zGuXF9foC2gzVU7E/edit#heading=h.dk4wc99db3qv
+https://docs.google.com/document/d/1Hsh80YKDvgRPYZWyO4lUf3G-05CEhAyW9WZxTJ8H-BU/edit#heading=h.dk4wc99db3qv
 
 ### Logger Info
