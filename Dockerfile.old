@@ -1,0 +1,15 @@
+FROM us-central1-docker.pkg.dev/pret-registry/ci/ci-cpp:latest AS build
+WORKDIR /root/ms-sensor-flow-meter
+COPY . ./
+RUN rm -rf build
+WORKDIR /root/ms-sensor-flow-meter/build
+#RUN entry_point cmake build
+RUN cmake .. && make -j10
+
+FROM us-central1-docker.pkg.dev/pret-registry/ci/os-debian:latest
+RUN apt-get update && apt-get install -y libbfd-dev \
+libunwind-dev
+WORKDIR /root/pkgmgr
+COPY --from=build /root/pkgmgr ./
+WORKDIR /bin
+COPY --from=build /root/ms-sensor-flow-meter/build/bin ./

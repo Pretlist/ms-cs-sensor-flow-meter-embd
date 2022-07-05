@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-configmap
+data:
+  NSQ_IP_PORT: "10.104.235.148:4150"
+  LOG_LEVEL: "1"

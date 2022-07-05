@@ -1,0 +1,17 @@
+list(APPEND diag_flags
+    "-Werror"
+    "-Weverything"
+    "-Wno-c++-compat"
+    "-Wno-c++98-compat-extra-semi"
+    "-Wno-c++98-compat-pedantic"
+    "-Wno-c++98-compat"
+    "-Wno-error=covered-switch-default"
+    "-Wno-error=exit-time-destructors"
+    "-Wno-error=global-constructors"
+    "-Wno-error=gnu-anonymous-struct"
+    "-Wno-error=nested-anon-types"
+    "-Wno-error=padded"
+    "-Wno-error=reserved-id-macro"
+    "-Wno-error=unused-command-line-argument"
+    "-Wno-error=unused-macros"
+    )

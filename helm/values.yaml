@@ -1,0 +1,22 @@
+# Default values for ms-sensor-flow-meter.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: ms-cs-sensor-flow-meter-embd
+  tag: latest
+  pullPolicy: IfNotPresent 
+
+containers:
+  name: ms-cs-sensor-flow-meter-embd
+  command: /bin/ms_sensor_flow_meter
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

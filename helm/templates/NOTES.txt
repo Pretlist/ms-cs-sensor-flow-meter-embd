@@ -1,0 +1,1 @@
+This Helm chart is for flow meter sensor microservice
