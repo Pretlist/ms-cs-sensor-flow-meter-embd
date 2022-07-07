@@ -28,7 +28,7 @@ struct SensorData {
   uint32_t counter_res;
   float threshold_min;
   float threshold_max;
-  SensorStatus prev_state;
+  Common::SensorStatus prev_state;
   
   folly::fbvector<uint8_t> serialized_pkt;
   folly::fbvector<float> sensor_buff;
@@ -59,9 +59,9 @@ class SensorFlowMeter {
   int8_t Scan();
   void InitNsq();
   void RegisterApp();
-  void GenTelmetryData(uint32_t id, struct SensorData *sensor, float sensor_val, Notification notify_type, SensorStatus state);
+  void GenTelmetryData(Common::SensorMepId id, struct SensorData *sensor, float sensor_val, Common::Notification notify_type, Common::SensorStatus state);
   bool PubTelemetryData(struct SensorData *sensor);
-  SensorStatus GetCurrState(struct SensorData *sensor, float sensor_val);
+  Common::SensorStatus GetCurrState(struct SensorData *sensor, float sensor_val);
 
  protected:
   void mProcessRxMsg(char* msg, uint32_t msg_len, char* topic);
@@ -70,20 +70,20 @@ class SensorFlowMeter {
  private:
   struct SensorData* mCreateSensorCore();
   void mNsqSubTopic(const std::string& topic);
-  void mHandleData(uint32_t id, struct SensorData *sensor);
+  void mHandleData(Common::SensorMepId id, struct SensorData *sensor);
   
   static void mNsqSubCallback(char* msg, uint32_t msg_len, char* topic, void* context);
   static void mTimerCallback(void *userdata);
 
+  bool m_ack_enabled = false; // No ack for sensors (disabled)
   Logger *m_logger = nullptr;
-  std::unordered_map<SensorMepId, struct SensorData *> m_map_sensor{};
+  std::unordered_map<Common::SensorMepId, struct SensorData *> m_map_sensor{};
 
   // NSQ
   ms_nsq_client::IMessagingServiceAdapter* m_nsq_pubsub{};
   folly::CPUThreadPoolExecutor *m_thread_nsq_sub = nullptr;
   std::string m_topic_register = "ms-cs-core-ctrl-sensor-register";
   std::string m_topic_event = "ms-cs-sensor-flow-meter";
-  std::string m_topic_cmd = "";
   std::string m_topic_ack = "";
   std::string m_topic_conf = "";
 

@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
   sensor.RegisterApp();
  
   while (isRunning) {
-    sleep(10);
+    sleep(2);
   }
 
   return 0;

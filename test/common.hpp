@@ -17,7 +17,7 @@
 #include "ack_nack.pb.h"
 #include "register_app.pb.h"
 #include "common.pb.h"
-#include "sensor_flow_meter.pb.h"
+#include "flow_meter.pb.h"
 
 #include "sensor_flow_meter.hpp"
 #include "sensor_flow_meter_flags.hpp"

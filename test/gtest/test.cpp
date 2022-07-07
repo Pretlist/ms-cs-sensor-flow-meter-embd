@@ -42,18 +42,18 @@ class SensorTest : public testing::Test {
   static void VerifyFlowMeterInlet(const std::string& topic, folly::fbvector<unsigned char>* serialized_pkt) {
     FlowMeter::FlowMeterMsg data_published;
     data_published.ParseFromArray(serialized_pkt->data(), serialized_pkt->size());
-    EXPECT_EQ(data_published.id(), SENSOR_FLOW_METER_INLET);
-    EXPECT_EQ(data_published.notification(), Notification::NOTIFICATION_PERIODIC);
-    EXPECT_EQ(data_published.status(), SensorStatus::SENSOR_STATUS_GOOD);
+    EXPECT_EQ(data_published.id(), Common::SENSOR_FLOW_METER_INLET);
+    EXPECT_EQ(data_published.notification(), Common::NOTIFICATION_PERIODIC);
+    EXPECT_EQ(data_published.status(), Common::SENSOR_STATUS_GOOD);
     EXPECT_EQ(data_published.flow(), gSensorData);
   }
   
   static void VerifyFlowMeterOutlet(const std::string& topic, folly::fbvector<unsigned char>* serialized_pkt) {
     FlowMeter::FlowMeterMsg data_published;
     data_published.ParseFromArray(serialized_pkt->data(), serialized_pkt->size());
-    EXPECT_EQ(data_published.id(), SENSOR_FLOW_METER_OUTLET);
-    EXPECT_EQ(data_published.notification(), Notification::NOTIFICATION_PERIODIC);
-    EXPECT_EQ(data_published.status(), SensorStatus::SENSOR_STATUS_GOOD);
+    EXPECT_EQ(data_published.id(), Common::SENSOR_FLOW_METER_OUTLET);
+    EXPECT_EQ(data_published.notification(), Common::NOTIFICATION_PERIODIC);
+    EXPECT_EQ(data_published.status(), Common::SENSOR_STATUS_GOOD);
     EXPECT_EQ(data_published.flow(), gSensorData);
   }
 };
@@ -64,7 +64,7 @@ ms_nsq_client::IMessagingServiceAdapter::subscriberOptions SensorTest::m_subscri
 TEST_F(SensorTest, registerApp) {
   // Mock the init-nsq function
   EXPECT_CALL(m_mockpubsub, CreatePublisher(FLAGS_nsq_ip_port, ms_nsq_client::IMessagingServiceAdapter::E_TCP)).WillOnce(testing::Return(true));
-  EXPECT_CALL(m_mockpubsub, Subscribe(::testing::Matcher<ms_nsq_client::IMessagingServiceAdapter::subscriberOptions*>(testing::_))).Times(3).WillRepeatedly(testing::DoAll(testing::Invoke(SensorTest::NsqClientData), testing::Return(true)));
+  EXPECT_CALL(m_mockpubsub, Subscribe(::testing::Matcher<ms_nsq_client::IMessagingServiceAdapter::subscriberOptions*>(testing::_))).Times(1).WillRepeatedly(testing::DoAll(testing::Invoke(SensorTest::NsqClientData), testing::Return(true)));
   EXPECT_CALL(m_mockpubsub, ConnectAndStartSubscriber()).WillOnce(testing::Return(true));
   sensor_obj.InitNsq();
 
@@ -76,27 +76,27 @@ TEST_F(SensorTest, registerApp) {
 TEST_F(SensorTest, flowMeterInlet) {
   // Mock the init-nsq function
   EXPECT_CALL(m_mockpubsub, CreatePublisher(FLAGS_nsq_ip_port, ms_nsq_client::IMessagingServiceAdapter::E_TCP)).WillOnce(testing::Return(true));
-  EXPECT_CALL(m_mockpubsub, Subscribe(::testing::Matcher<ms_nsq_client::IMessagingServiceAdapter::subscriberOptions*>(testing::_))).Times(3).WillRepeatedly(testing::DoAll(testing::Invoke(SensorTest::NsqClientData), testing::Return(true)));
+  EXPECT_CALL(m_mockpubsub, Subscribe(::testing::Matcher<ms_nsq_client::IMessagingServiceAdapter::subscriberOptions*>(testing::_))).Times(1).WillRepeatedly(testing::DoAll(testing::Invoke(SensorTest::NsqClientData), testing::Return(true)));
   EXPECT_CALL(m_mockpubsub, ConnectAndStartSubscriber()).WillOnce(testing::Return(true));
   sensor_obj.InitNsq();
 
   // Mock the publish function
   EXPECT_CALL(m_mockpubsub, PublishMessage("ms-cs-sensor-flow-meter", testing::Matcher<folly::fbvector<unsigned char>*>(testing::NotNull()))).Times(testing::AtLeast(1)).WillRepeatedly(testing::DoAll(testing::Invoke(SensorTest::VerifyFlowMeterInlet), testing::Return(true)));
   struct ms_cs_sensor_flow_meter_embd::SensorData sensor_info;
-  sensor_obj.GenTelmetryData(SENSOR_FLOW_METER_INLET, &sensor_info, gSensorData, Notification::NOTIFICATION_PERIODIC, SensorStatus::SENSOR_STATUS_GOOD);
+  sensor_obj.GenTelmetryData(Common::SENSOR_FLOW_METER_INLET, &sensor_info, gSensorData, Common::NOTIFICATION_PERIODIC, Common::SENSOR_STATUS_GOOD);
   sensor_obj.PubTelemetryData(&sensor_info);
 }
 
 TEST_F(SensorTest, flowMeterOutlet) {
   // Mock the init-nsq function
   EXPECT_CALL(m_mockpubsub, CreatePublisher(FLAGS_nsq_ip_port, ms_nsq_client::IMessagingServiceAdapter::E_TCP)).WillOnce(testing::Return(true));
-  EXPECT_CALL(m_mockpubsub, Subscribe(::testing::Matcher<ms_nsq_client::IMessagingServiceAdapter::subscriberOptions*>(testing::_))).Times(3).WillRepeatedly(testing::DoAll(testing::Invoke(SensorTest::NsqClientData), testing::Return(true)));
+  EXPECT_CALL(m_mockpubsub, Subscribe(::testing::Matcher<ms_nsq_client::IMessagingServiceAdapter::subscriberOptions*>(testing::_))).Times(1).WillRepeatedly(testing::DoAll(testing::Invoke(SensorTest::NsqClientData), testing::Return(true)));
   EXPECT_CALL(m_mockpubsub, ConnectAndStartSubscriber()).WillOnce(testing::Return(true));
   sensor_obj.InitNsq();
 
   // Mock the publish function
   EXPECT_CALL(m_mockpubsub, PublishMessage("ms-cs-sensor-flow-meter", testing::Matcher<folly::fbvector<unsigned char>*>(testing::NotNull()))).Times(testing::AtLeast(1)).WillRepeatedly(testing::DoAll(testing::Invoke(SensorTest::VerifyFlowMeterOutlet), testing::Return(true)));
   struct ms_cs_sensor_flow_meter_embd::SensorData sensor_info;
-  sensor_obj.GenTelmetryData(SENSOR_FLOW_METER_OUTLET, &sensor_info, gSensorData, Notification::NOTIFICATION_PERIODIC, SensorStatus::SENSOR_STATUS_GOOD);
+  sensor_obj.GenTelmetryData(Common::SENSOR_FLOW_METER_OUTLET, &sensor_info, gSensorData, Common::NOTIFICATION_PERIODIC, Common::SENSOR_STATUS_GOOD);
   sensor_obj.PubTelemetryData(&sensor_info);
 }
