@@ -6,7 +6,6 @@
 #define WORKSPACE_SRC_SENSOR_FLOW_METER_HPP
 #include <iostream>
 #include <string>
-#include <atomic>
 #include <unordered_map>
 #include "log/logger.hpp"
 #include <folly/executors/CPUThreadPoolExecutor.h>
@@ -19,21 +18,15 @@
 #include "common.pb.h"
 
 namespace ms_cs_sensor_flow_meter_embd {
-constexpr uint8_t kMaxRetry = 3;
-
 struct SensorData {
-  uint8_t counter_nack;
   uint32_t counter_seq_num;
   uint32_t counter_pub;
-  uint32_t counter_res;
   float threshold_min;
   float threshold_max;
   Common::SensorStatus prev_state;
   
-  folly::fbvector<uint8_t> serialized_pkt;
   folly::fbvector<float> sensor_buff;
   
-  std::atomic<bool> is_published;
   uint32_t timeout_read;
   uint32_t timeout_pub;
   uint32_t timeout_res;
@@ -59,8 +52,7 @@ class SensorFlowMeter {
   int8_t Scan();
   void InitNsq();
   void RegisterApp();
-  void GenTelmetryData(Common::SensorMepId id, struct SensorData *sensor, float sensor_val, Common::Notification notify_type, Common::SensorStatus state);
-  bool PubTelemetryData(struct SensorData *sensor);
+  bool PubTelemetryData(Common::SensorMepId id, struct SensorData *sensor, float sensor_val, Common::Notification notify_type, Common::SensorStatus state);
   Common::SensorStatus GetCurrState(struct SensorData *sensor, float sensor_val);
 
  protected:
@@ -75,7 +67,6 @@ class SensorFlowMeter {
   static void mNsqSubCallback(char* msg, uint32_t msg_len, char* topic, void* context);
   static void mTimerCallback(void *userdata);
 
-  bool m_ack_enabled = false; // No ack for sensors (disabled)
   Logger *m_logger = nullptr;
   std::unordered_map<Common::SensorMepId, struct SensorData *> m_map_sensor{};
 
@@ -84,7 +75,6 @@ class SensorFlowMeter {
   folly::CPUThreadPoolExecutor *m_thread_nsq_sub = nullptr;
   std::string m_topic_register = "ms-cs-core-ctrl-sensor-register";
   std::string m_topic_event = "ms-cs-sensor-flow-meter";
-  std::string m_topic_ack = "";
   std::string m_topic_conf = "";
 
   // Timer

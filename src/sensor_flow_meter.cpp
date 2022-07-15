@@ -3,12 +3,10 @@
 
 #include "register_app.pb.h"
 #include "flow_meter.pb.h"
-#include "ack_nack.pb.h"
 #include <google/protobuf/util/time_util.h>
 
 namespace ms_cs_sensor_flow_meter_embd {
 constexpr uint32_t kDefaultTimeoutRead = 1; // seconds
-constexpr uint32_t kDefaultTimeoutRes = 10; // seconds
 constexpr uint32_t kDefaultTimeoutPub = 300; // seconds
 
 SensorFlowMeter::SensorFlowMeter(ms_nsq_client::IMessagingServiceAdapter* pub_sub): m_nsq_pubsub(pub_sub) {
@@ -48,7 +46,7 @@ int8_t SensorFlowMeter::Scan() {
 
   // number of sensors scanned
   int8_t num_sensor = static_cast<int8_t>(m_map_sensor.size());
-  m_logger->Info("[%s]: Number of scaned sensors = %d", __func__, num_sensor);
+  m_logger->Debug("[%s]: Number of scaned sensors = %d", __func__, num_sensor);
   return num_sensor;
 }
 
@@ -59,10 +57,6 @@ void SensorFlowMeter::InitNsq() {
   }
 
   // Create NSQ subscriber 
-  if (m_ack_enabled) {
-    m_topic_ack = m_topic_event + "-ack";
-    mNsqSubTopic(m_topic_ack);
-  }
   m_topic_conf = m_topic_event + "-config";
   mNsqSubTopic(m_topic_conf);
 
@@ -83,10 +77,10 @@ void SensorFlowMeter::RegisterApp() {
     // m_logger->Info("---------------------------:%s", google::protobuf::util::TimeUtil::ToString(reg_msg.time_utc()).c_str());
 
     // serialization for publisher and submit to pub/sub
-    serialized_pkt.resize(reg_msg.ByteSizeLong());
+    folly::fbvector<uint8_t> serialized_pkt(reg_msg.ByteSizeLong());
     reg_msg.SerializeToArray(serialized_pkt.data(), serialized_pkt.size());
     if (m_nsq_pubsub->PublishMessage(m_topic_register, &serialized_pkt)) {
-      m_logger->Info("[%s] Register App request published with pkt id: %x, ingress_topic: %s", __func__, it.first, m_topic_event.c_str());
+      m_logger->Debug("[%s] Register App request published with pkt id: %x, ingress_topic: %s", __func__, it.first, m_topic_event.c_str());
       m_timer.Start();
     } else {
       m_logger->Error("[%s] Failed to publish register data for id = %u", __func__, it.first);
@@ -94,7 +88,7 @@ void SensorFlowMeter::RegisterApp() {
   }
 }
 
-void SensorFlowMeter::GenTelmetryData(Common::SensorMepId id, struct SensorData *sensor, float sensor_val, Common::Notification notify_type, Common::SensorStatus state) {
+bool SensorFlowMeter::PubTelemetryData(Common::SensorMepId id, struct SensorData *sensor, float sensor_val, Common::Notification notify_type, Common::SensorStatus state) {
   FlowMeter::FlowMeterMsg sensor_msg;
   sensor_msg.set_id(id);
   sensor_msg.set_seq_num(++sensor->counter_seq_num);
@@ -104,24 +98,14 @@ void SensorFlowMeter::GenTelmetryData(Common::SensorMepId id, struct SensorData 
   sensor_msg.set_flow(sensor_val);
 
   // serialization for publisher and submit to pub/sub
-  sensor->serialized_pkt.resize(sensor_msg.ByteSizeLong());
-  sensor_msg.SerializeToArray(sensor->serialized_pkt.data(), sensor->serialized_pkt.size());
-}
-
-bool SensorFlowMeter::PubTelemetryData(struct SensorData *sensor) {
-  sensor->is_published = m_nsq_pubsub->PublishMessage(m_topic_event, &sensor->serialized_pkt);
-  if (!sensor->is_published) {
+  folly::fbvector<uint8_t> serialized_pkt(sensor_msg.ByteSizeLong());
+  sensor_msg.SerializeToArray(serialized_pkt.data(), serialized_pkt.size());
+  if (!m_nsq_pubsub->PublishMessage(m_topic_event, &serialized_pkt)) {
     m_logger->Error("[%s] Failed to publish telemetry data: Seq Number = %u", __func__, sensor->counter_seq_num);
-    return sensor->is_published.load();
+    return false;
   }
 
-  // Increment response
-  if (m_ack_enabled && (++sensor->counter_nack > kMaxRetry)) {
-    // TODO take decision
-    m_logger->Warn("[%s] Ack not received for Max limit, take a decision", __func__);
-  }
-
-  return sensor->is_published.load();
+  return true;
 }
 
 Common::SensorStatus SensorFlowMeter::GetCurrState(struct SensorData *sensor, float sensor_val) {
@@ -137,26 +121,8 @@ Common::SensorStatus SensorFlowMeter::GetCurrState(struct SensorData *sensor, fl
 
 // Process message received on NSQ callback
 void SensorFlowMeter::mProcessRxMsg(char* msg, uint32_t msg_len, char* topic) {
-  m_logger->Info("[%s] rx topic: %s", __func__, topic);
-  if (m_topic_ack.compare(topic) == 0) {
-    AckNack::AckNackMsg res_msg;
-    res_msg.ParseFromArray(msg, msg_len); 
-    struct SensorData *sensor = nullptr;
-    try {
-      sensor = m_map_sensor.at(res_msg.id());
-    } catch (const std::out_of_range &e) {
-      m_logger->Warn("[%s] (id = %u) Exception at: %s", __func__, res_msg.id(), e.what());
-      return;
-    }
-    sensor->is_published = false; // reset
-    m_logger->Info("[%s] (id = %u) ACK-NACK seq_number: %u, response: %d", __func__, res_msg.id(), res_msg.seq_num(), res_msg.response());
-    if (res_msg.response() == AckNack::AckNackMsg::ACK) {
-      sensor->counter_nack = 0; // reset
-    } else {
-      m_logger->Warn("[%s] (id = %u) Nack received. Retrying with previous data", __func__, res_msg.id());
-      PubTelemetryData(sensor); // previous data
-    }
-  } else if (m_topic_conf.compare(topic) == 0) {
+  m_logger->Debug("[%s] rx topic: %s", __func__, topic);
+  if (m_topic_conf.compare(topic) == 0) {
     // TODO configuration if required 
   } 
 }
@@ -165,18 +131,6 @@ void SensorFlowMeter::mTimeout() {
   for (auto it : m_map_sensor) {
     ++it.second->counter_pub;
 
-    // Resend previous sensor data (Telemetry data)
-    if (m_ack_enabled && it.second->is_published) {
-      ++it.second->counter_res;
-      if (it.second->counter_res > it.second->timeout_res) {
-        it.second->counter_res = 0; // reset response counter
-        m_logger->Warn("[%s] (id = %u) Response timeout. Retrying with previous data", __func__, it.first);
-        PubTelemetryData(it.second); // previous data
-      }
-    } else {
-      it.second->counter_res = 0; // reset response counter
-    }
-
     // Time to read sensor data
     if (0 == (it.second->counter_pub % it.second->timeout_read)) {
       mHandleData(it.first, it.second);
@@ -184,14 +138,12 @@ void SensorFlowMeter::mTimeout() {
 
     // Publish sensor data (Telemetry data)
     if (it.second->counter_pub == it.second->timeout_pub) {
-      m_logger->Info("[%s] (id = %u) Publish current data", __func__, it.first);
+      m_logger->Debug("[%s] (id = %u) Publish current data", __func__, it.first);
       // Get maen of saved sensor data
       float sensor_val_mean = mean::Mean::Arithematic(it.second->sensor_buff.data(), it.second->sensor_buff.size());
       // float sensor_val_mean = mean::Mean::Geometric(it.second->sensor_buff.data(), it.second->sensor_buff.size());
-      GenTelmetryData(it.first, it.second, sensor_val_mean, Common::NOTIFICATION_PERIODIC, GetCurrState(it.second, sensor_val_mean)); // Update sensor data
-      PubTelemetryData(it.second); // current data
+      PubTelemetryData(it.first, it.second, sensor_val_mean, Common::NOTIFICATION_PERIODIC, GetCurrState(it.second, sensor_val_mean));
       it.second->counter_pub = 0; // reset publish counter
-      it.second->counter_res = 0; // reset response counter
       it.second->sensor_buff.clear();
     }  
   }
@@ -203,7 +155,6 @@ struct SensorData* SensorFlowMeter::mCreateSensorCore() {
   sensor->threshold_min = 2.0F;
   sensor->threshold_max = 10.0F;
   sensor->timeout_read = kDefaultTimeoutRead;
-  sensor->timeout_res = kDefaultTimeoutRes;
   sensor->timeout_pub = kDefaultTimeoutPub;
   sensor->flow_meter_core = new FlowMeterCore();
 
@@ -233,9 +184,8 @@ void SensorFlowMeter::mHandleData(Common::SensorMepId id, struct SensorData *sen
     sensor->prev_state = curr_state;
 
     // publish alert-notification
-    m_logger->Info("[%s] (id = %u) Publish current data (Alert)", __func__, id);
-    GenTelmetryData(id, sensor, sensor_val, Common::NOTIFICATION_ALERT, sensor->prev_state); // Update sensor data
-    PubTelemetryData(sensor); // current data (Alert)
+    m_logger->Debug("[%s] (id = %u) Publish current data (Alert)", __func__, id);
+    PubTelemetryData(id, sensor, sensor_val, Common::NOTIFICATION_ALERT, curr_state);
   }
 }
 

@@ -83,8 +83,7 @@ TEST_F(SensorTest, flowMeterInlet) {
   // Mock the publish function
   EXPECT_CALL(m_mockpubsub, PublishMessage("ms-cs-sensor-flow-meter", testing::Matcher<folly::fbvector<unsigned char>*>(testing::NotNull()))).Times(testing::AtLeast(1)).WillRepeatedly(testing::DoAll(testing::Invoke(SensorTest::VerifyFlowMeterInlet), testing::Return(true)));
   struct ms_cs_sensor_flow_meter_embd::SensorData sensor_info;
-  sensor_obj.GenTelmetryData(Common::SENSOR_FLOW_METER_INLET, &sensor_info, gSensorData, Common::NOTIFICATION_PERIODIC, Common::SENSOR_STATUS_GOOD);
-  sensor_obj.PubTelemetryData(&sensor_info);
+  sensor_obj.PubTelemetryData(Common::SENSOR_FLOW_METER_INLET, &sensor_info, gSensorData, Common::NOTIFICATION_PERIODIC, Common::SENSOR_STATUS_GOOD);
 }
 
 TEST_F(SensorTest, flowMeterOutlet) {
@@ -97,6 +96,5 @@ TEST_F(SensorTest, flowMeterOutlet) {
   // Mock the publish function
   EXPECT_CALL(m_mockpubsub, PublishMessage("ms-cs-sensor-flow-meter", testing::Matcher<folly::fbvector<unsigned char>*>(testing::NotNull()))).Times(testing::AtLeast(1)).WillRepeatedly(testing::DoAll(testing::Invoke(SensorTest::VerifyFlowMeterOutlet), testing::Return(true)));
   struct ms_cs_sensor_flow_meter_embd::SensorData sensor_info;
-  sensor_obj.GenTelmetryData(Common::SENSOR_FLOW_METER_OUTLET, &sensor_info, gSensorData, Common::NOTIFICATION_PERIODIC, Common::SENSOR_STATUS_GOOD);
-  sensor_obj.PubTelemetryData(&sensor_info);
+  sensor_obj.PubTelemetryData(Common::SENSOR_FLOW_METER_OUTLET, &sensor_info, gSensorData, Common::NOTIFICATION_PERIODIC, Common::SENSOR_STATUS_GOOD);
 }
