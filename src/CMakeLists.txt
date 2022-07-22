@@ -1,8 +1,10 @@
 add_subdirectory(${THIRD_PARTY_DIR}/ms-cs-schema-embd/src ${CMAKE_BINARY_DIR}/schema_build)
 
 find_package(Protobuf REQUIRED)
+find_package(CURL CONFIG REQUIRED)
+find_package(folly CONFIG REQUIRED)
 
-add_library(flow_meter STATIC 
+add_library(flow_meter
   sensor_flow_meter.cpp 
   sensor_flow_meter_flags.cpp
   flow_meter_core.cpp 
@@ -15,7 +17,8 @@ target_link_libraries(
   schema
   nsqadapter
   gonsq
-  collection::collection
+  CURL::libcurl
+  gflags logger spdlog pthread Folly::folly Folly::folly_deps Folly::follybenchmark Folly::folly_test_util
   rt
 )
 target_include_directories(

@@ -9,7 +9,6 @@ endif()
 
 list(APPEND BUILD_TYPE_DEBUG
         "-fwhole-program-vtables"
-        "-march=native"
         "-fvectorize"
         "-ftree-vectorize"
         "-pthread"
@@ -28,14 +27,11 @@ list(APPEND BUILD_TYPE_DEBUG
         "-std=cuda"
         "-stdlib=libstdc++"
         "-fblocks"
-        "-march=native"
-        "-mtune=native"
         )
 
     list(APPEND BUILD_TYPE_RELEASE
         "-Ofast"
         "-fwhole-program-vtables"
-        "-march=native"
         "-fvectorize"
         "-ftree-vectorize"
         "-pthread"
@@ -48,14 +44,11 @@ list(APPEND BUILD_TYPE_DEBUG
         "-std=cuda"
         "-stdlib=libstdc++"
         "-fblocks"
-        "-march=native"
-        "-mtune=native"
         )
 
 list(APPEND BUILD_TYPE_EXPERIMENTAL
         "-fwhole-program-vtables"
         "-Ofast"
-        "-march=native"
         "-fvectorize"
         "-ftree-vectorize"
         "-pthread"
@@ -71,6 +64,4 @@ list(APPEND BUILD_TYPE_EXPERIMENTAL
         "-rtlib=compiler-rt"
         "-ffreestanding"
         "-fblocks"
-        "-march=native"
-        "-mtune=native"
          )

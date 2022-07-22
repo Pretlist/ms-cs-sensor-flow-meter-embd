@@ -6,6 +6,15 @@ if(DEFINED ENV{PKGMGR_HOME_DIR})
 	set(CMAKE_TOOLCHAIN_FILE "$ENV{PKGMGR_HOME_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake")
 endif()
 
+if(DEFINED ENV{TARGETPLATFORM})
+	if("$ENV{TARGETPLATFORM}" STREQUAL "linux/arm64")
+		set(VCPKG_TARGET_TRIPLET "arm64-linux")
+		set(triple aarch64-linux-gnueabihf)
+		set(CMAKE_C_COMPILER_TARGET ${triple})
+		set(CMAKE_CXX_COMPILER_TARGET ${triple})
+	endif()
+endif()
+
 # project name and supported languages
 get_filename_component(ProjectId ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 string(REPLACE " " "_" ProjectId ${ProjectId})
@@ -93,12 +102,22 @@ mark_as_advanced(INSTALL_LIB_DIR)
 message(STATUS "INSTALL_LIB_DIR               " ${INSTALL_LIB_DIR})
 
 if(DEFINED ENV{PKGMGR_HOME_DIR})
-    list(APPEND CMAKE_MODULE_PATH "$ENV{PKGMGR_HOME_DIR}/vcpkg/installed/x64-linux/share/")
+    if(DEFINED ENV{TARGETPLATFORM})
+        if("$ENV{TARGETPLATFORM}" STREQUAL "linux/arm64")
+            list(APPEND CMAKE_MODULE_PATH "$ENV{PKGMGR_HOME_DIR}/vcpkg/installed/arm64-linux/share/")
+            list(APPEND CMAKE_PREFIX_PATH "$ENV{PKGMGR_HOME_DIR}/vcpkg/installed/arm64-linux/share/")
+        else() # X86_64
+            list(APPEND CMAKE_MODULE_PATH "$ENV{PKGMGR_HOME_DIR}/vcpkg/installed/x64-linux/share/")
+            list(APPEND CMAKE_PREFIX_PATH "$ENV{PKGMGR_HOME_DIR}/vcpkg/installed/x64-linux/share/")
+        endif()
+    else() # X86_64
+        list(APPEND CMAKE_MODULE_PATH "$ENV{PKGMGR_HOME_DIR}/vcpkg/installed/x64-linux/share/")
+        list(APPEND CMAKE_PREFIX_PATH "$ENV{PKGMGR_HOME_DIR}/vcpkg/installed/x64-linux/share/")
+    endif()
     list(APPEND CMAKE_MODULE_PATH "$ENV{PKGMGR_HOME_DIR}/collection/lib/cmake/")
     list(APPEND CMAKE_MODULE_PATH "$ENV{PKGMGR_HOME_DIR}/collection/lib64/cmake/")
     list(APPEND CMAKE_MODULE_PATH "$ENV{PKGMGR_HOME_DIR}/dsp/lib/cmake/")
 
-    list(APPEND CMAKE_PREFIX_PATH "$ENV{PKGMGR_HOME_DIR}/vcpkg/installed/x64-linux/share/")
     list(APPEND CMAKE_PREFIX_PATH "$ENV{PKGMGR_HOME_DIR}/collection/lib/cmake/")
     list(APPEND CMAKE_PREFIX_PATH "$ENV{PKGMGR_HOME_DIR}/collection/lib64/cmake/")
     list(APPEND CMAKE_PREFIX_PATH "$ENV{PKGMGR_HOME_DIR}/dsp/lib/cmake/")
@@ -299,17 +318,36 @@ if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
         "Install path prefix, prepended onto install directories." FORCE )
 endif()
 #------------------------------------------------------------------------------
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+if(DEFINED ENV{TARGETPLATFORM})
+    if("$ENV{TARGETPLATFORM}" STREQUAL "linux/amd64")
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mtune=native")
+    endif()
+else()
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mtune=native")
+endif()
 #------------------------------------------------------------------------------
 # Link lib directory install path
-set(PKGMGR_LIB_DIR "$ENV{PKGMGR_HOME_DIR}/vcpkg/installed/x64-linux/lib/")
+if(DEFINED ENV{TARGETPLATFORM})
+    if("$ENV{TARGETPLATFORM}" STREQUAL "linux/arm64")
+        set(PKGMGR_LIB_DIR "$ENV{PKGMGR_HOME_DIR}/vcpkg/installed/arm64-linux/lib/")
+        set(PKGMGR_INC_DIR "$ENV{PKGMGR_HOME_DIR}/vcpkg/installed/arm64-linux/include/")
+    else() # X86_64
+        set(PKGMGR_LIB_DIR "$ENV{PKGMGR_HOME_DIR}/vcpkg/installed/x64-linux/lib/")
+        set(PKGMGR_INC_DIR "$ENV{PKGMGR_HOME_DIR}/vcpkg/installed/x64-linux/include/")
+    endif()
+else() # X86_64
+    set(PKGMGR_LIB_DIR "$ENV{PKGMGR_HOME_DIR}/vcpkg/installed/x64-linux/lib/")
+    set(PKGMGR_INC_DIR "$ENV{PKGMGR_HOME_DIR}/vcpkg/installed/x64-linux/include/")
+endif()
+
 set(PKGMGR_COLLECTION_LIB_DIR "$ENV{PKGMGR_HOME_DIR}/collection/lib/")
 set(PKGMGR_COLLECTION_LIB64_DIR "$ENV{PKGMGR_HOME_DIR}/collection/lib64/")
 set(DSP_LIB_DIR "$ENV{PKGMGR_HOME_DIR}/dsp/lib/")
 set(DSP_LIB64_DIR "$ENV{PKGMGR_HOME_DIR}/dsp/lib64/")
 
 set(PKGMGR_COLLECTION_INC_DIR "$ENV{PKGMGR_HOME_DIR}/collection/include/")
-set(PKGMGR_INC_DIR "$ENV{PKGMGR_HOME_DIR}/vcpkg/installed/x64-linux/include/")
 set(DSP_INC_DIR "$ENV{PKGMGR_HOME_DIR}/dsp/include/")
 link_directories(${CMAKE_INSTALL_PREFIX}/lib
                  ${CMAKE_INSTALL_PREFIX}/lib64
