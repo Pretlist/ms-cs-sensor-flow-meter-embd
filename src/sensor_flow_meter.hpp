@@ -66,6 +66,7 @@ class SensorFlowMeter {
   
   static void mNsqSubCallback(char* msg, uint32_t msg_len, char* topic, void* context);
   static void mTimerCallback(void *userdata);
+  void mConfigure(char* msg, uint32_t msg_len);
 
   Logger *m_logger = nullptr;
   std::unordered_map<Common::SensorMepId, struct SensorData *> m_map_sensor{};
@@ -75,7 +76,7 @@ class SensorFlowMeter {
   folly::CPUThreadPoolExecutor *m_thread_nsq_sub = nullptr;
   std::string m_topic_register = "ms-cs-core-ctrl-sensor-register";
   std::string m_topic_event = "ms-cs-sensor-flow-meter";
-  std::string m_topic_conf = "";
+  std::string m_topic_config = "";
 
   // Timer
   timer::Timer m_timer;

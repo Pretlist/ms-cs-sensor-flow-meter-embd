@@ -3,6 +3,7 @@
 
 #include "register_app.pb.h"
 #include "flow_meter.pb.h"
+#include "sensor_mep_config_schema.pb.h"
 #include <google/protobuf/util/time_util.h>
 
 namespace ms_cs_sensor_flow_meter_embd {
@@ -57,8 +58,8 @@ void SensorFlowMeter::InitNsq() {
   }
 
   // Create NSQ subscriber 
-  m_topic_conf = m_topic_event + "-config";
-  mNsqSubTopic(m_topic_conf);
+  m_topic_config = m_topic_event + "-config";
+  mNsqSubTopic(m_topic_config);
 
   m_thread_nsq_sub = new folly::CPUThreadPoolExecutor(1);
   auto nsq_sub_thread = [&]() { m_nsq_pubsub->ConnectAndStartSubscriber(); };
@@ -81,7 +82,6 @@ void SensorFlowMeter::RegisterApp() {
     reg_msg.SerializeToArray(serialized_pkt.data(), serialized_pkt.size());
     if (m_nsq_pubsub->PublishMessage(m_topic_register, &serialized_pkt)) {
       m_logger->Debug("[%s] Register App request published with pkt id: %x, ingress_topic: %s", __func__, it.first, m_topic_event.c_str());
-      m_timer.Start();
     } else {
       m_logger->Error("[%s] Failed to publish register data for id = %u", __func__, it.first);
     }
@@ -122,9 +122,27 @@ Common::SensorStatus SensorFlowMeter::GetCurrState(struct SensorData *sensor, fl
 // Process message received on NSQ callback
 void SensorFlowMeter::mProcessRxMsg(char* msg, uint32_t msg_len, char* topic) {
   m_logger->Debug("[%s] rx topic: %s", __func__, topic);
-  if (m_topic_conf.compare(topic) == 0) {
-    // TODO configuration if required 
+  if (m_topic_config.compare(topic) == 0) {
+    mConfigure(msg, msg_len);
   } 
+}
+
+void SensorFlowMeter::mConfigure(char* msg, uint32_t msg_len) {
+  SensorMepConfigData::SensorAndMepConfig config_msg; 
+  config_msg.ParseFromArray(msg, msg_len);
+
+  if (m_map_sensor.find(config_msg.sensor_mep_id()) == m_map_sensor.end()) {
+    m_logger->Error("[%s] Invalid sensorId(%u): configuration discarded", __func__, config_msg.sensor_mep_id());
+    return;
+  }
+
+  struct SensorData *sensor =  m_map_sensor.at(config_msg.sensor_mep_id());
+  sensor->threshold_min = config_msg.minthreshold();
+  sensor->threshold_max = config_msg.maxthreshold();
+  sensor->timeout_pub = config_msg.periodicity();
+
+  // start timer to read and publish telemetry data
+  m_timer.Start();
 }
 
 void SensorFlowMeter::mTimeout() {
@@ -152,8 +170,8 @@ void SensorFlowMeter::mTimeout() {
 struct SensorData* SensorFlowMeter::mCreateSensorCore() {
   auto *sensor = new struct SensorData;
   memset(sensor, 0, sizeof(struct SensorData));
-  sensor->threshold_min = 2.0F;
-  sensor->threshold_max = 10.0F;
+  sensor->threshold_min = 0.0F;
+  sensor->threshold_max = 0.0F;
   sensor->timeout_read = kDefaultTimeoutRead;
   sensor->timeout_pub = kDefaultTimeoutPub;
   sensor->flow_meter_core = new FlowMeterCore();
