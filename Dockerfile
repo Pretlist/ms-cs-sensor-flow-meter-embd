@@ -26,7 +26,7 @@ COPY . .
 RUN set -o xtrace && \
     cmake -H. -Bbuild -DCMAKE_INSTALL_PREFIX="${INSTALL_DIR}" -DCMAKE_BUILD_TYPE=Release && \
     cd build && \
-    make
+    make -j10
 # End Changes here
 
 ############## FINAL IMAGE BAKING  ###########

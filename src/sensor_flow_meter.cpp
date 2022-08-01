@@ -40,7 +40,7 @@ SensorFlowMeter::~SensorFlowMeter() {
 
 int8_t SensorFlowMeter::Scan() {
   // sensor 1
-  m_map_sensor.insert({Common::SENSOR_FLOW_METER_INLET, mCreateSensorCore()});
+  // m_map_sensor.insert({Common::SENSOR_FLOW_METER_INLET, mCreateSensorCore()});
   
   // sensor 2
   m_map_sensor.insert({Common::SENSOR_FLOW_METER_OUTLET, mCreateSensorCore()});
@@ -103,6 +103,8 @@ bool SensorFlowMeter::PubTelemetryData(Common::SensorMepId id, struct SensorData
   if (!m_nsq_pubsub->PublishMessage(m_topic_event, &serialized_pkt)) {
     m_logger->Error("[%s] Failed to publish telemetry data: Seq Number = %u", __func__, sensor->counter_seq_num);
     return false;
+  } else {
+    m_logger->Debug("[%s] sensor flow data: %f", __func__, sensor_val);
   }
 
   return true;
@@ -140,6 +142,10 @@ void SensorFlowMeter::mConfigure(char* msg, uint32_t msg_len) {
   sensor->threshold_min = config_msg.minthreshold();
   sensor->threshold_max = config_msg.maxthreshold();
   sensor->timeout_pub = config_msg.periodicity();
+
+  m_logger->Debug("[%s]: Threshold Min : %f", __func__, sensor->threshold_min);
+  m_logger->Debug("[%s]: Threshold Max : %f", __func__, sensor->threshold_max);
+  m_logger->Debug("[%s]: Periodicity   : %u", __func__, sensor->timeout_pub);
 
   // start timer to read and publish telemetry data
   m_timer.Start();
