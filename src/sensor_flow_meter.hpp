@@ -51,6 +51,7 @@ class SensorFlowMeter {
 
   int8_t Scan();
   void InitNsq();
+  void SetDevLoc(Common::InstallationType dev_loc);
   void RegisterApp();
   bool PubTelemetryData(Common::SensorMepId id, struct SensorData *sensor, float sensor_val, Common::Notification notify_type, Common::SensorStatus state);
   Common::SensorStatus GetCurrState(struct SensorData *sensor, float sensor_val);
@@ -60,7 +61,7 @@ class SensorFlowMeter {
   void mTimeout();
 
  private:
-  struct SensorData* mCreateSensorCore();
+  struct SensorData* mCreateSensorCore(Common::SensorMepId id);
   void mNsqSubTopic(const std::string& topic);
   void mHandleData(Common::SensorMepId id, struct SensorData *sensor);
   

@@ -40,10 +40,12 @@ SensorFlowMeter::~SensorFlowMeter() {
 
 int8_t SensorFlowMeter::Scan() {
   // sensor 1
-  // m_map_sensor.insert({Common::SENSOR_FLOW_METER_INLET, mCreateSensorCore()});
+  // m_map_sensor.insert({Common::SENSOR_FLOW_METER_INLET, mCreateSensorCore(Common::SENSOR_FLOW_METER_INLET)});
   
   // sensor 2
-  m_map_sensor.insert({Common::SENSOR_FLOW_METER_OUTLET, mCreateSensorCore()});
+  // m_map_sensor.insert({Common::SENSOR_FLOW_METER_OUTLET, mCreateSensorCore(Common::SENSOR_FLOW_METER_OUTLET)});
+
+  SetDevLoc(static_cast<Common::InstallationType>(FLAGS_installation));
 
   // number of sensors scanned
   int8_t num_sensor = static_cast<int8_t>(m_map_sensor.size());
@@ -64,6 +66,27 @@ void SensorFlowMeter::InitNsq() {
   m_thread_nsq_sub = new folly::CPUThreadPoolExecutor(1);
   auto nsq_sub_thread = [&]() { m_nsq_pubsub->ConnectAndStartSubscriber(); };
   m_thread_nsq_sub->add(nsq_sub_thread);
+}
+
+void SensorFlowMeter::SetDevLoc(Common::InstallationType dev_loc) {
+  switch(dev_loc) {
+    case Common::InstallationType::STATION_WELL:
+    case Common::InstallationType::PIVOT_ANCHOR:
+      m_map_sensor.insert({Common::SENSOR_FLOW_METER_OUTLET, mCreateSensorCore(Common::SENSOR_FLOW_METER_OUTLET)});
+    break;
+    case Common::InstallationType::STATION_FERTILIZER:
+      m_map_sensor.insert({Common::SENSOR_FLOW_METER_INLET, mCreateSensorCore(Common::SENSOR_FLOW_METER_INLET)});
+      m_map_sensor.insert({Common::SENSOR_FLOW_METER_OUTLET, mCreateSensorCore(Common::SENSOR_FLOW_METER_OUTLET)});
+    break;
+    case Common::InstallationType::PIVOT_EDGE:
+    case Common::InstallationType::PIVOT_MIDFIELD:
+      m_logger->Warn("[%s]: Not implemented", __func__);
+    break;
+    case Common::InstallationType::TYPE_UNKNOWN:
+    default:
+      m_logger->Error("[%s]: Unknown installation type", __func__);
+    return;
+  }
 }
 
 void SensorFlowMeter::RegisterApp() {
@@ -104,7 +127,7 @@ bool SensorFlowMeter::PubTelemetryData(Common::SensorMepId id, struct SensorData
     m_logger->Error("[%s] Failed to publish telemetry data: Seq Number = %u", __func__, sensor->counter_seq_num);
     return false;
   } else {
-    m_logger->Debug("[%s] sensor flow data: %f", __func__, sensor_val);
+    m_logger->Debug("[%s] sensor flow(%d) data: %f", __func__, id, sensor_val);
   }
 
   return true;
@@ -173,14 +196,14 @@ void SensorFlowMeter::mTimeout() {
   }
 }
 
-struct SensorData* SensorFlowMeter::mCreateSensorCore() {
+struct SensorData* SensorFlowMeter::mCreateSensorCore(Common::SensorMepId id) {
   auto *sensor = new struct SensorData;
   memset(sensor, 0, sizeof(struct SensorData));
   sensor->threshold_min = 0.0F;
   sensor->threshold_max = 0.0F;
   sensor->timeout_read = kDefaultTimeoutRead;
   sensor->timeout_pub = kDefaultTimeoutPub;
-  sensor->flow_meter_core = new FlowMeterCore();
+  sensor->flow_meter_core = new FlowMeterCore(id);
 
   return sensor;
 }

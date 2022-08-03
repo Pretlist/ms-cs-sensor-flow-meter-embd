@@ -31,4 +31,5 @@ spec:
           - configMapRef:
               name: {{ .Release.Name }}-configmap
           args: [ "-nsq_ip_port=$(NSQ_IP_PORT)",
-                  "-ms_cs_sensor_flow_meter_embd_loglevel=$(LOG_LEVEL)"]
+                  "-ms_cs_sensor_flow_meter_embd_loglevel=$(LOG_LEVEL)",
+                  "-installation=$(INSTALLATION)"]

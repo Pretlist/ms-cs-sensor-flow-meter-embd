@@ -1,7 +1,7 @@
 ########## DO NOT REMOVE BUILD STAGGING AREA#########
 # 1. Stagging Area for build
-FROM --platform=$TARGETPLATFORM us-central1-docker.pkg.dev/pret-registry/ci/ci-clang-llvm-arm:latest as target-lib
-FROM --platform=$BUILDPLATFORM us-central1-docker.pkg.dev/pret-registry/ci/ci-clang-llvm-arm:latest as baking-stage
+FROM --platform=$TARGETPLATFORM us-east1-docker.pkg.dev/pret-registry/ci/ci-clang-llvm-arm:latest as target-lib
+FROM --platform=$BUILDPLATFORM us-east1-docker.pkg.dev/pret-registry/ci/ci-clang-llvm-arm:latest as baking-stage
 ARG TARGETPLATFORM
 ARG BUILDPLATFORM
 COPY --from=target-lib /root/pkgmgr/vcpkg/installed/ /root/pkgmgr/vcpkg/installed/
@@ -41,6 +41,6 @@ COPY --from=baking-stage /usr/lib/x86_64-linux-gnu/libatomic.so.1 /usr/lib/x86_6
 #COPY --from=baking-stage1 /usr/lib/aarch64-linux-gnu/libstdc++.so.6.0.28 /usr/lib/aarch64-linux-gnu/libstdc++.so.6.0.28
 #COPY --from=baking-stage1 /usr/lib/aarch64-linux-gnu/libstdc++.so.6 /usr/lib/aarch64-linux-gnu/libstdc++.so.6
 
-COPY --from=baking-stage /workspace/build/bin/ms_sensor_flow_meter /ms/ms_sensor_flow_meter
+COPY --from=baking-stage /workspace/build/bin/ms_sensor_flow_meter /bin/ms_sensor_flow_meter
 
-CMD ["/ms/ms_sensor_flow_meter"]
+CMD ["/bin/ms_sensor_flow_meter"]

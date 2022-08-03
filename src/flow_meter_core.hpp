@@ -6,10 +6,12 @@
 #define WORKSPACE_SRC_FLOW_METER_CORE_HPP
 #include <iostream>
 
+#include "common.pb.h"
+
 namespace ms_cs_sensor_flow_meter_embd {
 class FlowMeterCore {
  public:
-  FlowMeterCore();
+  FlowMeterCore(Common::SensorMepId id);
   ~FlowMeterCore();
   
   /**
@@ -23,7 +25,7 @@ class FlowMeterCore {
   float GetFlow();
 
  private:
-  float m_flow = 0.0F;
+  int m_flow_channel = 0; // set in constructor based on flow inlet/outlet
 };
 }  // namespace ms_cs_sensor_flow_meter_embd
 #endif
